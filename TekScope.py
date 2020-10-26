@@ -163,6 +163,231 @@ class TekScope(vxi11.Instrument):
 
     ## TODO: the getters ...
 
+    # ----- HORIZONTAL COMMAND GROUP
+    def horizontal_general_state(self):
+        return self.query('HORizontal?')
+
+    def get_horizontal_scale(self):
+        return float(self.query('HORizontal:SCAle?').split(' ')[-1])
+
+    def set_horizontal_scale(self, h_division):
+        '''
+        Set horizontal division to the closest possible to the h_division set. \
+        Returns the actual division after setting.
+        '''
+        self.write('HORizontal:SCAle '+str(h_division))
+        return self.get_horizontal_scale()
+
+    def get_trace_length(self):
+        return float(self.query('HORizontal:ACQDURATION?').split(' ')[-1])
+
+    def get_horizontal_position(self):
+        if bool(int(self.query('HORizontal:DELay:MODe?').split(' ')[-1])):
+            return float(self.query('HORizontal:DELay:TIMe?').split(' ')[-1])
+        else:
+            return 0.
+
+    def set_horizontal_position(self, hor_delay):
+        self.write('HORizontal:DELay:MODe ON')
+        self.write('HORizontal:DELay:TIMe '+str(hor_delay))
+
+    def zero_horizontal_position(self):
+        self.write('HORizontal:DELay:MODe OFF')
+
+    # ----- VERTICAL COMMAND GROUP
+    def get_general_vertical_settings(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return self.query(channel+'?')
+        else:
+            raise ValueError('Invalid channel name')
+
+    def get_channel_bandwidth(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return float(self.query(channel+':BANdwidth?').split(' ')[-1])
+        else:
+            raise ValueError('Invalid channel name')
+
+    def set_channel_bandwidth_limit(self, channel, BW='FULL'):
+        '''
+        Bandwidth limitation setting for channel <channel>.
+        Enter either 'FULL' or the BW in MHz
+        '''
+        if channel in ['CH1','CH2','CH3','CH4']:
+            if BW == 'FULL':
+                self.write(channel+':BANdwidth FULL')
+            else:
+                self.write(channel+':BANdwidth '+str(BW))
+        else:
+            raise ValueError('Invalid channel name')
+
+    def channel_is_clipping(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return bool(int(self.query(channel+':CLIPping?').split(' ')[-1]))
+        else:
+            raise ValueError('Invalid channel name')
+
+    def get_channel_coupling(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return self.query(channel+':COUPling?').split(' ')[-1]
+        else:
+            raise ValueError('Invalid channel name')
+
+    def set_channel_coupling(self, channel, coupl):
+        if channel in ['CH1','CH2','CH3','CH4'] and coupl in ['AC','DC','DCREJ']:
+            self.write(channel+':COUPling '+coupl)
+        else:
+            raise ValueError('Invalid channel name')
+
+    def get_vertical_offset(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return float(self.query(channel+':OFFSet?').split(' ')[-1])
+        else:
+            raise ValueError('Invalid channel name')
+
+    def set_vertical_offset(self, channel, offset):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            self.write(channel+':OFFSet '+str(offset))
+        else:
+            raise ValueError('Invalid channel name')
+
+    def get_vertical_position(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return float(self.query(channel+':POSition?').split(' ')[-1])
+        else:
+            raise ValueError('Invalid channel name')
+
+    def set_vertical_position(self, channel, offset):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            self.write(channel+':POSition '+str(offset))
+        else:
+            raise ValueError('Invalid channel name')
+
+    def get_vertical_scale(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return float(self.query(channel+':SCAle?').split(' ')[-1])
+        else:
+            raise ValueError('Invalid channel name')
+
+    def set_vertical_scale(self, channel, scale):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            self.write(channel+':SCAle '+str(scale))
+        else:
+            raise ValueError('Invalid channel name')
+
+    def get_channel_termination(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4']:
+            return float(self.query(channel+':TERmination?').split(' ')[-1])
+        else:
+            raise ValueError('Invalid channel name')
+
+    def set_channel_termination(self, channel, term):
+        '''
+        Set channel termination impedance.
+        Possible inputs: '50OHM' or '1MEG'
+        '''
+        if channel in ['CH1','CH2','CH3','CH4']:
+            if term == '50OHM':
+                self.write(channel+':TERmination 50')
+            elif term == '1MEG':
+                self.write(channel+':TERmination 1000000')
+            else:
+                raise ValueError('Invalid impedance value')
+        else:
+            raise ValueError('Invalid channel name')
+
+    # ----- TRIGGER COMMAND GROUP
+    ### TODO: setting functions
+    def get_general_trigger_settings(self):
+        return self.query('TRIGger?')
+
+    def get_trigger_state(self):
+        '''
+        Possible outcome: ARMED, AUTO, READY, SAVE, TRIGGER
+        '''
+        return self.query('TRIGger:STATE?').split(' ')[-1]
+
+    def get_trigger_mode(self):
+        return self.query('TRIGger:A:MODe?').split(' ')[-1]
+
+    def set_trigger_mode(self, mode):
+        if mode in ['AUTO','NORMal']:
+            self.write('TRIGger:A:MODe '+mode)
+        else:
+            raise ValueError('Invalid trigger mode')
+
+    def get_trigger_holdoff(self):
+        mode = self.query('TRIGger:A:HOLDoff:BY?').split(' ')[-1]
+        if mode == 'RANDOM':
+            return mode
+        elif mode == 'TIME':
+            time = self.query('TRIGger:A:HOLDoff:TIMe?').split(' ')[-1]
+            return mode+' '+str(time)
+
+    def set_trigger_holdoff(self, mode, t_delay=0):
+        '''
+        Holdoff mode: random or user specified time.
+        '''
+        if mode == 'TIMe':
+            self.write('TRIGger:A:HOLDoff:BY '+mode)
+            self.write('TRIGger:A:HOLDoff:TIMe '+str(t_delay))
+        elif mode == 'RANDom':
+            self.write('TRIGger:A:HOLDoff:BY '+mode)
+        else:
+            raise ValueError('Invalid holdoff mode')
+
+    def get_trigger_type(self):
+        return self.query('TRIGger:A:TYPe?').split(' ')[-1]
+
+    def set_trigger_type(self, type):
+        if type in ['EDGE','WIDth','TIMEOut','RUNt','WINdow','LOGIc','SETHold','TRANsition','BUS']:
+            self.write('TRIGger:A:TYPe '+type)
+        else:
+            raise ValueError('Invalid trigger type')
+
+    def get_trigger_edge_coupling(self):
+        return self.query('TRIGger:A:EDGE:COUPling?').split(' ')[-1]
+
+    def set_trigger_edge_coupling(self, coupling):
+        if coupling in ['DC','HFRej','LFRej','NOISErej']:
+            self.write('TRIGger:A:EDGE:COUPling '+coupling)
+        else:
+            raise ValueError('Invalid trigger coupling')
+
+    def get_trigger_edge_slope(self):
+        return self.query('TRIGger:A:EDGE:SLOpe?').split(' ')[-1]
+
+    def set_trigger_edge_slope(self, slope):
+        if slope in ['RISe','FALL','EITher']:
+            self.write('TRIGger:A:EDGE:SLOpe '+slope)
+        else:
+            raise ValueError('Invalid trigger slope')
+
+    def get_trigger_edge_source(self):
+        return self.query('TRIGger:A:EDGE:SOUrce?').split(' ')[-1]
+
+    def set_trigger_edge_source(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4','LINE','AUXiliary']:
+            self.write('TRIGger:A:EDGE:SOUrce '+channel)
+        else:
+            raise ValueError('Invalid trigger slope')
+
+    def get_trigger_level(self, channel):
+        if channel in ['CH1','CH2','CH3','CH4','LINE','AUXiliary']:
+            return self.query('TRIGger:A:LEVel:'+channel+'?').split(' ')[-1]
+        else:
+            raise ValueError('Invalid trigger channel')
+
+    def set_trigger_level(self, channel, level):
+        if channel in ['CH1','CH2','CH3','CH4','LINE','AUXiliary']:
+            self.write('TRIGger:A:LEVel:'+channel+' '+str(level))
+        else:
+            raise ValueError('Invalid trigger channel')
+
+    # ----- WAVEFORM TRANSFER COMMAND GROUP
+
+
+
+#############################################################
     # ----- CUSTOM ACQUISTION SETUP
     def setup_single_acquisition(self, shot_number):
         '''
@@ -189,6 +414,7 @@ class TekScope(vxi11.Instrument):
         Setup to save on each trigger the traces in .xls format.
         Channels: CH1, ..., ALL
         It will try to create the destination folder.
+
         '''
         self.acquisition_stop()
         self.mkdir(save_folder)
@@ -196,3 +422,16 @@ class TekScope(vxi11.Instrument):
         self.set_save_on_trigger('ON')
         self.set_save_waveform('ON', 'SPREADSheet')
         self.set_save_channel(channel)
+
+    def setup_edge_trigger(self, channel, level, slope='RISe'):
+        '''
+        Setup to trigger on a channel, on EDGE mode at a given voltage
+        '''
+        self.acquisition_stop()
+        self.set_trigger_mode('NORMal')
+        self.set_trigger_type('EDGE')
+        self.set_trigger_edge_coupling('DC')
+        self.set_trigger_holdoff('RANDom')
+        self.set_trigger_edge_slope(slope)
+        self.set_trigger_edge_source(channel)
+        self.set_trigger_level(channel, level)
