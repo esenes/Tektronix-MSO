@@ -296,7 +296,6 @@ class TekScope(vxi11.Instrument):
             raise ValueError('Invalid channel name')
 
     # ----- TRIGGER COMMAND GROUP
-    ### TODO: setting functions
     def get_general_trigger_settings(self):
         return self.query('TRIGger?')
 
@@ -384,6 +383,48 @@ class TekScope(vxi11.Instrument):
             raise ValueError('Invalid trigger channel')
 
     # ----- WAVEFORM TRANSFER COMMAND GROUP
+    def get_transfer_source(self):
+        return self.query('DATa:SOUrce?').split(' ')[-1]
+
+    def set_transfer_source(self, channel):
+        if channel in self.query('DATa:SOUrce:AVAILable?').split(' ')[-1].split(','):
+            return self.write('DATa:SOUrce '+channel)
+        else:
+            raise ValueError('Invalid channel selected')
+
+    def get_transfer_encoding(self):
+        return self.query('DATa:ENCdg?').split(' ')[-1]
+
+    def set_transfer_encoding(self, encoding='ASCII'):
+        return self.write('DATa:ENCdg '+encoding)
+
+    def get_transfer_n_byte(self):
+        return self.query('WFMOutpre:BYT_Nr?').split(' ')[-1]
+
+    def set_transfer_n_byte(self, bytes=1):
+        return self.write('WFMOutpre:BYT_Nr '+str(bytes))
+
+    def get_transfer_start_sample(self):
+        return self.query('DATa:STARt?').split(' ')[-1]
+
+    def set_transfer_start_sample(self, start_sample=1):
+        return self.write('DATa:STARt '+str(start_sample))
+
+    def get_transfer_end_sample(self):
+        return self.query('DATa:STOP?').split(' ')[-1]
+
+    def set_transfer_end_sample(self, stop_sample=1000000):
+        return self.write('DATa:STOP '+str(stop_sample))
+
+    def transfer_waveform(self, transfer_header=True):
+        raw_data = self.ask('CURVe?').split(' ')[-1]
+
+        if transfer_header:
+            header = self.ask('WFMOutpre?')
+            return [raw_data, header]
+        else:
+            return raw_data
+
 
 
 
@@ -435,3 +476,13 @@ class TekScope(vxi11.Instrument):
         self.set_trigger_edge_slope(slope)
         self.set_trigger_edge_source(channel)
         self.set_trigger_level(channel, level)
+
+    def setup_waveform_transfer(self, channel, encoding, n_byte, start_sample=1, end_sample=1000000):
+        '''
+        Setup the waveform transfer over network
+        '''
+        self.set_transfer_source(channel)
+        self.set_transfer_encoding(encoding)
+        self.set_transfer_n_byte(n_byte)
+        self.set_transfer_start_sample(start_sample)
+        self.set_transfer_end_sample(end_sample)
