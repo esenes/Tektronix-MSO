@@ -1,11 +1,20 @@
 # Tektronix-MSO
 A python wrapper to communicate with Tektronix MSO series 5 and 6 oscilloscopes
 
-Basic usage:
-```
-import TekScope
+Installation:
 
-scope = TekScope.TekScope("1.1.1.1", 11)
+Move inside the package folder and then
+
+```
+pip install -e .
+```
+
+
+Hello world:
+```
+from mso import TekScope
+
+scope = tekscope.TekScope("1.1.1.1", 11)
 
 scope.setup_save_traces('C:/pippo', 'ALL')
 scope.setup_single_acquisition(50)
