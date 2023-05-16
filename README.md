@@ -12,7 +12,7 @@ pip install -e .
 
 Hello world:
 ```
-from mso import TekScope
+from mso import tekscope
 
 scope = tekscope.TekScope("1.1.1.1", 11)
 
